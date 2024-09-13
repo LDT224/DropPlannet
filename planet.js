@@ -23,8 +23,9 @@ let mouse = {
     y: 10
 };
 
-let randomNumber = 0;
 let lineHeight = 10;
+let gravity = 0;
+let planetArray = [];
 
 const planets = [
     { namePlanet: 1, size: 20, src: "./Assets/1.png", img: null },
@@ -49,11 +50,6 @@ window.onload = function() {
 
     document.addEventListener("mousemove", function(event){
         indexPlannet.x = event.clientX;
-        if(indexPlannet.x <= planets[randomNumber].size/2){
-            indexPlannet.x = planets[randomNumber].size/2;
-        }else if(indexPlannet.x >= boardWidth - planets[randomNumber].size/2){
-            indexPlannet.x = boardWidth - planets[randomNumber].size/2;
-        }
     })
 
     document.addEventListener("mousedown", dropPlanet());
@@ -68,10 +64,6 @@ function update() {
     context.lineWidth = 5;
     context.strokeStyle = box.color;
     
-    // context.beginPath();
-    // context.arc(indexPlannet.x, indexPlannet.y, indexPlannet.radius, 0, 2 * Math.PI);
-    // context.stroke();
-    
     context.strokeRect(box.x, box.y, box.width, box.height);
     context.beginPath();
     context.moveTo(0, 250);
@@ -80,7 +72,25 @@ function update() {
     context.lineTo(360, 250);
     context.stroke();
     
-    drawPlanet(indexPlannet.x, indexPlannet.y);   
+    if(!indexPlannet.spawned){
+        spawnPlannet(indexPlannet.x, indexPlannet.y);
+    }
+
+    planetArray.forEach(planet => {
+        if(planet.img && planet.img.complete){
+            if(!planet.isDropped){
+                if(indexPlannet.x <= planet.radius/2){
+                    indexPlannet.x = planet.radius/2;
+                }
+                else if(indexPlannet.x >= boardWidth - planet.radius/2){
+                    indexPlannet.x = boardWidth - planet.radius/2;
+                }
+                planet.x = indexPlannet.x;
+            }
+            context.drawImage(planet.img, planet.x - planet.radius/2, planet.y - planet.radius/2, planet.radius, planet.radius)
+        }
+    });
+
     for(let i =0; i < 17; i++){
         context.beginPath();
         context.moveTo(indexPlannet.x, indexPlannet.y + 50 + lineHeight*i*2);
@@ -98,16 +108,23 @@ function loadPlanets() {
     });
 }
 
-function drawPlanet(x, y) {
-    if(!indexPlannet.spawned){
-        randomNumber = Math.floor(Math.random()*5);
+function spawnPlannet(x,y){
+    if(indexPlannet.spawned){
+        return
     }
-    if(planets[randomNumber].img && planets[randomNumber].img.complete){
-        context.drawImage(planets[randomNumber].img, x - planets[randomNumber].size / 2, y - planets[randomNumber].size / 2, planets[randomNumber].size, planets[randomNumber].size);
-        indexPlannet.spawned = true;
-    }
+    
+    let randomNumber = Math.floor(Math.random()*5);
+    let planet = {
+        img : planets[randomNumber].img,
+        x : x,
+        y : y,
+        radius : planets[randomNumber].size,
+        isDropped : false
+    };
+
+    planetArray.push(planet);
+    indexPlannet.spawned = true;
 }
 
 function dropPlanet(){
-
 }
