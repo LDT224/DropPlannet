@@ -24,7 +24,7 @@ let mouse = {
 };
 
 let lineHeight = 10;
-let gravity = 0;
+let gravity = 9.81;
 let planetArray = [];
 
 const planets = [
@@ -52,7 +52,7 @@ window.onload = function() {
         indexPlannet.x = event.clientX;
     })
 
-    document.addEventListener("mousedown", dropPlanet());
+    document.addEventListener("mousedown", dropPlanet);
     requestAnimationFrame(update);
 };
 
@@ -87,6 +87,21 @@ function update() {
                 }
                 planet.x = indexPlannet.x;
             }
+            else{
+                planet.y += gravity;
+
+                 if(planet.y + planet.radius >= box.height + box.y) {
+                    planet.y = box.height + box.y - planet.radius/2; 
+                }
+
+                if(planet.x - planet.radius / 2 <= 0) {
+                    planet.x = planet.radius / 2; 
+                }
+
+                if(planet.x + planet.radius / 2 >= boardWidth) {
+                    planet.x = boardWidth - planet.radius / 2; 
+                }
+            }
             context.drawImage(planet.img, planet.x - planet.radius/2, planet.y - planet.radius/2, planet.radius, planet.radius)
         }
     });
@@ -115,6 +130,7 @@ function spawnPlannet(x,y){
     
     let randomNumber = Math.floor(Math.random()*5);
     let planet = {
+        namePlanet : planets[randomNumber].namePlanet,
         img : planets[randomNumber].img,
         x : x,
         y : y,
@@ -127,4 +143,6 @@ function spawnPlannet(x,y){
 }
 
 function dropPlanet(){
+    planetArray[planetArray.length-1].isDropped = true;
+    indexPlannet.spawned = false;
 }
