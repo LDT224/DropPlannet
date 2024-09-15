@@ -14,23 +14,25 @@ class Planet {
 
     updatePosition(secondsPassed) {
         if (this.isDropped) {
-            // Giảm tốc độ lực hấp dẫn khi gần va chạm
             if (this.vy > 0 && this.y + this.radius >= box.height + box.y) {
-                this.vy *= 0.7; // Giảm tốc độ sau khi chạm đáy
+                this.vy *= 0.7; 
             } else {
                 this.vy += gravity * secondsPassed;
             }
     
             this.x += this.vx * secondsPassed;
             this.y += this.vy * secondsPassed;
+
+            if(this.y < indexPlannet.y){
+                gameOver = true;
+                return;
+            }
     
-            // Kiểm tra giới hạn dưới
             if (this.y + this.radius >= box.height + box.y) {
                 this.y = box.height + box.y - this.radius / 2;
-                this.vy = 0;  // Ngừng rơi khi chạm đáy
+                this.vy = 0;  
             }
             
-            // Kiểm tra biên giới hai bên
             if (this.x - this.radius / 2 <= 0) {
                 this.x = this.radius / 2;
                 this.vx = 0;
@@ -87,35 +89,35 @@ class Planet {
         if (index1 > -1) planetArray.splice(index1, 1);
 
         planetArray.push(newPlanet);
+
+        score += Math.pow(2,newPlanet.namePlanet);
+        increaseCanDraw();
     }
 
     collisionOtherPlanet(otherPlanet) {
         let vCollision = {x: otherPlanet.x - this.x, y: otherPlanet.y - this.y};
         let distance = Math.sqrt((otherPlanet.x - this.x) * (otherPlanet.x - this.x) + (otherPlanet.y - this.y) * (otherPlanet.y - this.y));
         
-        if (distance === 0) return; // Tránh chia cho 0
+        if (distance === 0) return; 
         let vCollisionNorm = {x: vCollision.x / distance, y: vCollision.y / distance};
         
         let vRelativeVelocity = {x: this.vx - otherPlanet.vx, y: this.vy - otherPlanet.vy};
         let speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
         
-        // Chỉ xử lý nếu vận tốc tương đối hướng về phía nhau (va chạm)
         if (speed < 0) return;
     
         speed *= Math.min(this.restitution, otherPlanet.restitution);
         
         let impulse = 2 * speed / (this.mass + otherPlanet.mass);
         
-        // Cập nhật vận tốc dựa trên phản hồi va chạm
         this.vx -= (impulse * otherPlanet.mass * vCollisionNorm.x);
         this.vy -= (impulse * otherPlanet.mass * vCollisionNorm.y);
         otherPlanet.vx += (impulse * this.mass * vCollisionNorm.x);
         otherPlanet.vy += (impulse * this.mass * vCollisionNorm.y);
     
-        // Đảm bảo các hành tinh không chồng lên nhau bằng cách đẩy chúng ra xa nhau
         const overlap = (this.radius + otherPlanet.radius) / 2 - distance;
         if (overlap > 0) {
-            const correctionFactor = 0.5; // Chia đều lực đẩy ra cho hai hành tinh
+            const correctionFactor = 0.5; 
             const correction = {x: vCollisionNorm.x * overlap * correctionFactor, y: vCollisionNorm.y * overlap * correctionFactor};
             
             this.x -= correction.x;
@@ -160,6 +162,10 @@ let secondsPassed = 0;
 let oldTimeStamp = 0;
 const restitution = 0.90;
 
+let score = 0;
+let gameOver = false;
+let canDraw = 1;
+
 const planets = [
     { namePlanet: 0, size: 20, src: "./Assets/0.png", img: null },
     { namePlanet: 1, size: 30, src: "./Assets/1.png", img: null },
@@ -185,10 +191,15 @@ window.onload = function() {
     });
 
     document.addEventListener("mousedown", dropPlanet);
+
+    document.addEventListener("keydown", replay);
     requestAnimationFrame(update);
 };
 
 function update(timeStamp) {
+    if(gameOver)
+        return;
+
     secondsPassed = (timeStamp - oldTimeStamp) / 100;
     oldTimeStamp = timeStamp;
 
@@ -237,6 +248,15 @@ function update(timeStamp) {
         context.stroke();
     }
 
+    context.fillStyle = "white";
+    context.font = "45px sans-serif";
+    context.textAlign = 'center';
+    context.fillText(score, boardWidth/2, 50);
+
+    if(gameOver){
+        context.fillText("Game Over", 5, 90);
+    }
+
     requestAnimationFrame(update);
 }
 
@@ -251,7 +271,7 @@ function loadPlanets() {
 function spawnPlannet(x, y) {
     if (indexPlannet.spawned) return;
 
-    let randomNumber = Math.floor(Math.random() * 5);
+    let randomNumber = Math.floor(Math.random() * canDraw);
     let planetData = planets[randomNumber];
     let planet = new Planet(planetData.namePlanet, planetData.img, x, y, planetData.size);
 
@@ -265,4 +285,23 @@ function dropPlanet() {
     });
 
     indexPlannet.spawned = false;
+}
+
+function replay(e){
+    if(e.code == "Space"){        
+        if(gameOver){
+            indexPlannet.x = 180;
+            indexPlannet.spawned = false;
+            planetArray = [];
+            score = 0;
+            gameOver = false;
+            console.log("AA")
+        }
+    }
+}
+
+function increaseCanDraw(){
+    if(canDraw < 5){
+        canDraw = score/6;
+    }
 }
