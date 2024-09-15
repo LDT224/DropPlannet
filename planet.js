@@ -1,3 +1,133 @@
+class Planet {
+    constructor(namePlanet, img, x, y, radius, isDropped = false) {
+        this.namePlanet = namePlanet;
+        this.img = img;
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.vx = 0;
+        this.vy = 0;
+        this.mass = radius / 10;
+        this.isDropped = isDropped;
+        this.restitution = 0.8;
+    }
+
+    updatePosition(secondsPassed) {
+        if (this.isDropped) {
+            // Giảm tốc độ lực hấp dẫn khi gần va chạm
+            if (this.vy > 0 && this.y + this.radius >= box.height + box.y) {
+                this.vy *= 0.7; // Giảm tốc độ sau khi chạm đáy
+            } else {
+                this.vy += gravity * secondsPassed;
+            }
+    
+            this.x += this.vx * secondsPassed;
+            this.y += this.vy * secondsPassed;
+    
+            // Kiểm tra giới hạn dưới
+            if (this.y + this.radius >= box.height + box.y) {
+                this.y = box.height + box.y - this.radius / 2;
+                this.vy = 0;  // Ngừng rơi khi chạm đáy
+            }
+            
+            // Kiểm tra biên giới hai bên
+            if (this.x - this.radius / 2 <= 0) {
+                this.x = this.radius / 2;
+                this.vx = 0;
+            }
+            if (this.x + this.radius / 2 >= boardWidth) {
+                this.x = boardWidth - this.radius / 2;
+                this.vx = 0;
+            }
+        }
+        else{
+            if(indexPlannet.x <= this.radius/2){
+                indexPlannet.x = this.radius/2;
+            }
+            else if(indexPlannet.x >= boardWidth - this.radius/2){
+                indexPlannet.x = boardWidth - this.radius/2;
+            }
+            this.x = indexPlannet.x;
+        }
+    }
+
+    draw(context) {
+        if (this.img && this.img.complete) {
+            context.drawImage(this.img, this.x - this.radius / 2, this.y - this.radius / 2, this.radius, this.radius);
+        }
+    }
+
+    checkCollision(otherPlanet) {
+        const dx = this.x - otherPlanet.x;
+        const dy = this.y - otherPlanet.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < (this.radius + otherPlanet.radius) / 2;
+    }
+
+    static collisionSamePlanet(planet1, planet2) {
+        let dx = planet2.x - planet1.x;
+        let dy = planet2.y - planet1.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        let nx = dx / distance;
+        let ny = dy / distance;
+        let collisionPointX = (planet1.x + nx * planet1.radius + planet2.x - nx * planet2.radius) / 2;
+        let collisionPointY = (planet1.y + ny * planet1.radius + planet2.y - ny * planet2.radius) / 2;
+
+        let newPlanetData = planets[planet1.namePlanet + 1];
+        if (planet1.namePlanet + 1 >= planets.length) {
+            newPlanetData = planets[planet1.namePlanet];
+        }
+
+        const newPlanet = new Planet(newPlanetData.namePlanet, newPlanetData.img, collisionPointX, collisionPointY, newPlanetData.size, true);
+        
+        const index1 = planetArray.indexOf(planet1);
+        const index2 = planetArray.indexOf(planet2);
+
+        if (index2 > -1) planetArray.splice(index2, 1);
+        if (index1 > -1) planetArray.splice(index1, 1);
+
+        planetArray.push(newPlanet);
+    }
+
+    collisionOtherPlanet(otherPlanet) {
+        let vCollision = {x: otherPlanet.x - this.x, y: otherPlanet.y - this.y};
+        let distance = Math.sqrt((otherPlanet.x - this.x) * (otherPlanet.x - this.x) + (otherPlanet.y - this.y) * (otherPlanet.y - this.y));
+        
+        if (distance === 0) return; // Tránh chia cho 0
+        let vCollisionNorm = {x: vCollision.x / distance, y: vCollision.y / distance};
+        
+        let vRelativeVelocity = {x: this.vx - otherPlanet.vx, y: this.vy - otherPlanet.vy};
+        let speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
+        
+        // Chỉ xử lý nếu vận tốc tương đối hướng về phía nhau (va chạm)
+        if (speed < 0) return;
+    
+        speed *= Math.min(this.restitution, otherPlanet.restitution);
+        
+        let impulse = 2 * speed / (this.mass + otherPlanet.mass);
+        
+        // Cập nhật vận tốc dựa trên phản hồi va chạm
+        this.vx -= (impulse * otherPlanet.mass * vCollisionNorm.x);
+        this.vy -= (impulse * otherPlanet.mass * vCollisionNorm.y);
+        otherPlanet.vx += (impulse * this.mass * vCollisionNorm.x);
+        otherPlanet.vy += (impulse * this.mass * vCollisionNorm.y);
+    
+        // Đảm bảo các hành tinh không chồng lên nhau bằng cách đẩy chúng ra xa nhau
+        const overlap = (this.radius + otherPlanet.radius) / 2 - distance;
+        if (overlap > 0) {
+            const correctionFactor = 0.5; // Chia đều lực đẩy ra cho hai hành tinh
+            const correction = {x: vCollisionNorm.x * overlap * correctionFactor, y: vCollisionNorm.y * overlap * correctionFactor};
+            
+            this.x -= correction.x;
+            this.y -= correction.y;
+            otherPlanet.x += correction.x;
+            otherPlanet.y += correction.y;
+        }
+    }
+    
+}
+
+
 let board;
 let boardWidth = 360;
 let boardHeight = 640;
@@ -26,6 +156,9 @@ let mouse = {
 let lineHeight = 10;
 let gravity = 9.81;
 let planetArray = [];
+let secondsPassed = 0; 
+let oldTimeStamp = 0;
+const restitution = 0.90;
 
 const planets = [
     { namePlanet: 0, size: 20, src: "./Assets/0.png", img: null },
@@ -39,26 +172,27 @@ const planets = [
     { namePlanet: 8, size: 100, src: "./Assets/8.png", img: null },
 ];
 
-
 window.onload = function() {
     board = document.getElementById('board');
     board.height = boardHeight;
     board.width = boardWidth;
     context = board.getContext("2d");
-    
+
     loadPlanets();
 
-    document.addEventListener("mousemove", function(event){
+    document.addEventListener("mousemove", function(event) {
         indexPlannet.x = event.clientX;
-    })
+    });
 
     document.addEventListener("mousedown", dropPlanet);
     requestAnimationFrame(update);
 };
 
-function update() {
-    requestAnimationFrame(update);
-    if (!context) return; 
+function update(timeStamp) {
+    secondsPassed = (timeStamp - oldTimeStamp) / 100;
+    oldTimeStamp = timeStamp;
+
+    if (!context) return;
     
     context.clearRect(0, 0, board.width, board.height);
     context.lineWidth = 5;
@@ -72,141 +206,63 @@ function update() {
     context.lineTo(360, 250);
     context.stroke();
     
-    if(!indexPlannet.spawned){
-        setTimeout(spawnPlannet, 1000,indexPlannet.x, indexPlannet.y);
-        //spawnPlannet(indexPlannet.x, indexPlannet.y);
+    if (!indexPlannet.spawned) {
+        setTimeout(spawnPlannet, 1000, indexPlannet.x, indexPlannet.y);
     }
-
+    
     planetArray.forEach((planet, i) => {
-        if(planet.img && planet.img.complete){
-            if(!planet.isDropped){
-                if(indexPlannet.x <= planet.radius/2){
-                    indexPlannet.x = planet.radius/2;
+        planet.updatePosition(secondsPassed);
+        
+        for (let j = i + 1; j < planetArray.length; j++) {
+            let otherPlanet = planetArray[j];
+            if (!otherPlanet.isDropped) continue;
+            
+            if (planet.checkCollision(otherPlanet)) {
+                if (planet.namePlanet === otherPlanet.namePlanet) {
+                    Planet.collisionSamePlanet(planet, otherPlanet);
                 }
-                else if(indexPlannet.x >= boardWidth - planet.radius/2){
-                    indexPlannet.x = boardWidth - planet.radius/2;
+                else{
+                    planet.collisionOtherPlanet(otherPlanet);
                 }
-                planet.x = indexPlannet.x;
             }
-            else{
-                planet.y += gravity;
-
-                 if(planet.y + planet.radius >= box.height + box.y) {
-                    planet.y = box.height + box.y - planet.radius/2; 
-                }
-
-                if(planet.x - planet.radius / 2 <= 0) {
-                    planet.x = planet.radius / 2; 
-                }
-
-                if(planet.x + planet.radius / 2 >= boardWidth) {
-                    planet.x = boardWidth - planet.radius / 2; 
-                }
-
-                    for (let j = i + 1; j < planetArray.length; j++) {
-                        let otherPlanet = planetArray[j];
-                        if(!otherPlanet.isDropped){
-                            continue;
-                        }
-                        if (checkCollision(planet, otherPlanet)) {
-                            if(planet.namePlanet === otherPlanet.namePlanet){
-                                collisionSamePlanet(planet, otherPlanet);     
-
-                            }
-                        }
-                    }                
-            }
-            context.drawImage(planet.img, planet.x - planet.radius/2, planet.y - planet.radius/2, planet.radius, planet.radius);
         }
+        
+        planet.draw(context);
     });
-
-    for(let i =0; i < 17; i++){
+    
+    for (let i = 0; i < 17; i++) {
         context.beginPath();
-        context.moveTo(indexPlannet.x, indexPlannet.y + 50 + lineHeight*i*2);
-        context.lineTo(indexPlannet.x, indexPlannet.y + 50 + lineHeight*(i*2+1));
+        context.moveTo(indexPlannet.x, indexPlannet.y + 50 + lineHeight * i * 2);
+        context.lineTo(indexPlannet.x, indexPlannet.y + 50 + lineHeight * (i * 2 + 1));
         context.stroke();
     }
+
+    requestAnimationFrame(update);
 }
 
 function loadPlanets() {
     planets.forEach(planet => {
         planet.img = new Image();
         planet.img.src = planet.src;
-        planet.img.onload = function() {
-        };
+        planet.img.onload = function() {};
     });
 }
 
-function spawnPlannet(x,y){
-    if(indexPlannet.spawned){
-        return
-    }
-    
-    let randomNumber = Math.floor(Math.random()*5);
-    let planet = {
-        namePlanet : planets[randomNumber].namePlanet,
-        img : planets[randomNumber].img,
-        x : x,
-        y : y,
-        radius : planets[randomNumber].size,
-        vx: 0,
-        vy: 0,
-        mass: planets[randomNumber].size / 10,
-        isDropped : false,
-    };
+function spawnPlannet(x, y) {
+    if (indexPlannet.spawned) return;
+
+    let randomNumber = Math.floor(Math.random() * 5);
+    let planetData = planets[randomNumber];
+    let planet = new Planet(planetData.namePlanet, planetData.img, x, y, planetData.size);
 
     planetArray.push(planet);
     indexPlannet.spawned = true;
 }
 
-function dropPlanet(){
-    for(let i = 0; i < planetArray.length; i++){
-        planetArray[i].isDropped = true;
-    }
-    
+function dropPlanet() {
+    planetArray.forEach(planet => {
+        planet.isDropped = true;
+    });
+
     indexPlannet.spawned = false;
-}
-
-function checkCollision(planet1, planet2) {
-    const dx = planet1.x - planet2.x;
-    const dy = planet1.y - planet2.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    return distance < (planet1.radius + planet2.radius) / 2;
-}
-
-function collisionSamePlanet(planet1, planet2){
-    let dx = planet2.x - planet1.x;
-    let dy = planet2.y - planet1.y;
-
-    let distance = Math.sqrt(dx * dx + dy * dy);
-
-    let nx = dx / distance;
-    let ny = dy / distance;
-
-    let collisionPointX = (planet1.x + nx * planet1.radius + planet2.x - nx * planet2.radius) / 2;
-    let collisionPointY = (planet1.y + ny * planet1.radius + planet2.y - ny * planet2.radius) / 2;
-
-    let newPlanet = planets[planet1.namePlanet + 1];
-    if(planet1.namePlanet + 1 >= planets.length)
-        newPlanet = planets[planet1.namePlanet];
-    let planet = {
-        namePlanet : newPlanet.namePlanet,
-        img : newPlanet.img,
-        x : collisionPointX,
-        y : collisionPointY,
-        radius : newPlanet.size,
-        vx: 0,
-        vy: 0,
-        mass: newPlanet.size / 10,
-        isDropped : true,
-        isCollision : false
-    };
-    const index1 = planetArray.indexOf(planet1);
-    const index2 = planetArray.indexOf(planet2);
-
-    if (index2 > -1) planetArray.splice(index2, 1);
-    if (index1 > -1) planetArray.splice(index1, 1);
-
-    planetArray.push(planet);
-    console.log(planetArray)
 }
