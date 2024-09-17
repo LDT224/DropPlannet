@@ -136,6 +136,7 @@ function dropPlanet() {
     for(let i = 0; i < planetArray.length; i++){
         if(planetArray[i].isDropped == false){
             planetArray[i].isDropped = true;
+            planetArray[i].x += Math.random() > 0.5? 2 : -2;
         }
     }
 
