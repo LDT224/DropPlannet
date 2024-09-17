@@ -1,9 +1,73 @@
-body {
-    font-family:'Courier New', Courier, monospace;
-    text-align: center;
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f0f0; /* Adjust background as needed */
 }
 
 #board {
-    /* background-color: skyblue; */
+    display: block;
+    margin: auto;
+    border: 2px solid #000;
     background-image: url("./Assets/flappybirdbg.png");
+}
+
+.hidden {
+    display: none;
+}
+
+#gameOverBanner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    color: white;
+    font-size: 24px;
+}
+
+#replayButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#replayButton:hover {
+    background-color: #45a049;
+}
+
+#startGameBanner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    color: white;
+    font-size: 24px;
+}
+
+#startButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#startButton:hover {
+    background-color: #45a049;
 }

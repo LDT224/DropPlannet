@@ -146,7 +146,7 @@ let box = {
 let indexPlannet = {
     x: 180,
     y: 180,
-    radius: 10,
+    radius: 5,
     spawned: false
 };
 
@@ -186,19 +186,30 @@ window.onload = function() {
 
     loadPlanets();
 
+    document.getElementById('startButton').addEventListener('click', startGame);
+
     document.addEventListener("mousemove", function(event) {
         indexPlannet.x = event.clientX;
     });
 
     document.addEventListener("mousedown", dropPlanet);
 
-    document.addEventListener("keydown", replay);
-    requestAnimationFrame(update);
+    document.addEventListener("keydown", function(e) {
+        if (e.code === "Space") {
+            replay();
+        }
+    });
+
+    document.getElementById('replayButton').addEventListener('click', resetGame);
+    
+    board.style.display = "none"; 
 };
 
 function update(timeStamp) {
-    if(gameOver)
+    if(gameOver){
+        displayGameOver();
         return;
+    }
 
     secondsPassed = (timeStamp - oldTimeStamp) / 100;
     oldTimeStamp = timeStamp;
@@ -208,6 +219,10 @@ function update(timeStamp) {
     context.clearRect(0, 0, board.width, board.height);
     context.lineWidth = 5;
     context.strokeStyle = box.color;
+
+    context.beginPath();
+    context.arc(indexPlannet.x, indexPlannet.y, indexPlannet.radius, 0, 2 * Math.PI);
+    context.stroke();
     
     context.strokeRect(box.x, box.y, box.width, box.height);
     context.beginPath();
@@ -251,11 +266,7 @@ function update(timeStamp) {
     context.fillStyle = "white";
     context.font = "45px sans-serif";
     context.textAlign = 'center';
-    context.fillText(score, boardWidth/2, 50);
-
-    if(gameOver){
-        context.fillText("Game Over", 5, 90);
-    }
+    context.fillText(score, boardWidth/2, 50); 
 
     requestAnimationFrame(update);
 }
@@ -280,6 +291,9 @@ function spawnPlannet(x, y) {
 }
 
 function dropPlanet() {
+    if(!indexPlannet.spawned){
+        return;
+    }
     planetArray.forEach(planet => {
         planet.isDropped = true;
     });
@@ -288,20 +302,60 @@ function dropPlanet() {
 }
 
 function replay(e){
-    if(e.code == "Space"){        
-        if(gameOver){
-            indexPlannet.x = 180;
-            indexPlannet.spawned = false;
-            planetArray = [];
-            score = 0;
-            gameOver = false;
-            console.log("AA")
-        }
-    }
+        // if(gameOver){
+        //     indexPlannet.x = 180;
+        //     indexPlannet.spawned = false;
+        //     planetArray = [];
+        //     score = 0;
+        //     gameOver = false;
+        // }
+        gameOver = true;
 }
 
 function increaseCanDraw(){
-    if(canDraw < 5){
-        canDraw = score/6;
+    if(score < 6){
+        canDraw = 0;
+    } else if(score < 20 && score > 6){
+        canDraw = 2;
+    }else if(score > 20 && score < 70){
+        canDraw = 3;
+    }else if(score > 70 && score < 150){
+        canDraw = 4;
+    }else if(score > 150){
+        canDraw = 5;
     }
+}
+
+function displayGameOver() {
+    const banner = document.getElementById('gameOverBanner');
+    const finalScore = document.getElementById('finalScore');
+
+    finalScore.textContent = score;
+    banner.classList.remove('hidden');
+}
+
+function resetGame() {
+    // Hide the game over banner
+    document.getElementById('gameOverBanner').classList.add('hidden');
+
+    // Reset game variables
+    indexPlannet.x = 180;
+    indexPlannet.spawned = false;
+    planetArray = [];
+    score = 0;
+    canDraw = 0;
+    gameOver = false;
+    // Restart the game loop
+    requestAnimationFrame(update);
+}
+
+function startGame() {
+    // Hide the start game banner
+    document.getElementById('startGameBanner').style.display = 'none';
+
+    // Show the canvas to start the game visuals
+    board.style.display = "block";
+
+    // Start the game loop
+    requestAnimationFrame(update);
 }

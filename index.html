@@ -8,6 +8,18 @@
         <script src="planet.js"></script>
     </head>
     <body>
+        <div id="startGameBanner">
+            <h1>Welcome to Drop Planet!</h1>
+            <button id="startButton">Start Game</button>
+        </div>
+        
         <canvas id="board"></canvas>
+
+        <div id="gameOverBanner" class="hidden">
+            <h1>Game Over</h1>
+            <p>Your Score: <span id="finalScore">0</span></p>
+            <button id="replayButton">Replay</button>
+        </div>
+        
     </body>
 </html>
